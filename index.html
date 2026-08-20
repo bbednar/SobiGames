@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sobi Games — Arcade</title>
+<meta name="description" content="A small arcade of hand-crafted browser games. Play Starpath, a constellation memory game.">
+<meta name="theme-color" content="#0B0F1E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0B0F1E;
+    --bg-deep: #060810;
+    --panel: #10152A;
+    --panel-hi: #161C36;
+    --line-faint: rgba(234,234,245,0.08);
+    --line: rgba(234,234,245,0.14);
+    --star-idle: #454E70;
+    --amber: #FFC369;
+    --amber-dim: rgba(255,195,105,0.30);
+    --cyan: #6EE7E0;
+    --text: #EAEAF5;
+    --text-dim: #8A90AC;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  html{background:var(--bg);}
+  body{
+    background:
+      radial-gradient(ellipse at 50% -10%, #161C36 0%, var(--bg) 55%, var(--bg-deep) 100%);
+    color:var(--text);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+    position:relative;
+    overflow-x:hidden;
+  }
+  #starfield{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+  }
+  .wrap{
+    position:relative;
+    z-index:1;
+    max-width:960px;
+    margin:0 auto;
+    padding:40px 20px 64px;
+  }
+
+  header.site{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:64px;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:16px;
+    letter-spacing:0.06em;
+  }
+  .brand .mark{
+    width:10px; height:10px; border-radius:50%;
+    background:var(--amber);
+    box-shadow:0 0 12px var(--amber);
+  }
+  .brand span.dim{color:var(--text-dim); font-weight:500;}
+  .nav-tag{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:6px 14px;
+  }
+
+  .hero{
+    text-align:center;
+    margin-bottom:56px;
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.28em;
+    text-transform:uppercase;
+    color:var(--cyan);
+    margin:0 0 20px;
+  }
+  .hero h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:clamp(40px, 8vw, 72px);
+    line-height:1.02;
+    letter-spacing:-0.01em;
+    margin:0 0 20px;
+    text-wrap:balance;
+  }
+  .hero h1 .glow{
+    color:var(--amber);
+    text-shadow:0 0 30px var(--amber-dim);
+  }
+  .hero p{
+    max-width:520px;
+    margin:0 auto;
+    font-size:16px;
+    line-height:1.6;
+    color:var(--text-dim);
+    text-wrap:pretty;
+  }
+
+  .section-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom:20px;
+    padding-bottom:14px;
+    border-bottom:1px solid var(--line-faint);
+  }
+  .section-head h2{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:18px;
+    letter-spacing:0.02em;
+    margin:0;
+  }
+  .section-head .count{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    color:var(--text-dim);
+    letter-spacing:0.1em;
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:18px;
+  }
+  @media (min-width:640px){
+    .grid{grid-template-columns:repeat(2, 1fr);}
+  }
+
+  a.card{
+    display:flex;
+    flex-direction:column;
+    text-decoration:none;
+    color:inherit;
+    background:var(--panel);
+    border:1px solid var(--line-faint);
+    border-radius:18px;
+    overflow:hidden;
+    transition:transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  a.card:hover{
+    transform:translateY(-4px);
+    border-color:var(--amber-dim);
+    box-shadow:0 18px 40px rgba(6,8,16,0.6);
+  }
+  .card-art{
+    position:relative;
+    aspect-ratio:16/10;
+    background:
+      radial-gradient(ellipse at 60% 20%, #1B2242 0%, var(--panel-hi) 60%, var(--panel) 100%);
+    overflow:hidden;
+  }
+  .card-art svg{position:absolute; inset:0; width:100%; height:100%;}
+  .card-body{
+    padding:18px 20px 22px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .card-body .genre{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+    color:var(--cyan);
+  }
+  .card-body h3{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:22px;
+    margin:0;
+  }
+  .card-body p{
+    font-size:13.5px;
+    line-height:1.55;
+    color:var(--text-dim);
+    margin:2px 0 0;
+  }
+  .card-foot{
+    margin-top:14px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:13px;
+    letter-spacing:0.03em;
+    color:var(--amber);
+  }
+  .card-foot .arrow{transition:transform 0.2s ease;}
+  a.card:hover .card-foot .arrow{transform:translateX(4px);}
+
+  .card.soon{
+    background:transparent;
+    border-style:dashed;
+    border-color:var(--line);
+    cursor:default;
+  }
+  .card.soon:hover{transform:none; box-shadow:none; border-color:var(--line);}
+  .card.soon .card-art{
+    background:repeating-linear-gradient(135deg, rgba(234,234,245,0.02) 0 12px, transparent 12px 24px), var(--panel);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .soon-badge{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:8px 16px;
+  }
+
+  footer.site{
+    margin-top:56px;
+    padding-top:24px;
+    border-top:1px solid var(--line-faint);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:12px;
+    font-size:12px;
+    color:var(--text-dim);
+    font-family:'JetBrains Mono', monospace;
+    letter-spacing:0.08em;
+  }
+</style>
+</head>
+<body>
+<canvas id="starfield" aria-hidden="true"></canvas>
+
+<div class="wrap">
+  <header class="site">
+    <div class="brand">
+      <span class="mark"></span>
+      SOBI&nbsp;<span class="dim">GAMES</span>
+    </div>
+    <span class="nav-tag">Browser Arcade</span>
+  </header>
+
+  <section class="hero">
+    <p class="eyebrow">Handmade browser games</p>
+    <h1>Play something<br><span class="glow">out of this world</span></h1>
+    <p>A tiny arcade of no-install, single-page games that run right in your browser. Pick one below and jump straight in.</p>
+  </section>
+
+  <section aria-labelledby="library-title">
+    <div class="section-head">
+      <h2 id="library-title">Game Library</h2>
+      <span class="count">01 available</span>
+    </div>
+
+    <div class="grid">
+      <a class="card" href="starpath.html" aria-label="Play Starpath, a constellation memory game">
+        <div class="card-art">
+          <svg viewBox="0 0 320 200" role="img" aria-label="Constellation path preview">
+            <g fill="var(--star-idle)">
+              <circle cx="40" cy="150" r="3"/>
+              <circle cx="250" cy="40" r="3"/>
+              <circle cx="90" cy="60" r="3"/>
+              <circle cx="290" cy="140" r="3"/>
+              <circle cx="150" cy="170" r="3"/>
+            </g>
+            <polyline points="55,140 110,95 175,120 230,70 275,110"
+              fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
+            <g fill="var(--amber)">
+              <circle cx="55" cy="140" r="5"/>
+              <circle cx="110" cy="95" r="5"/>
+              <circle cx="175" cy="120" r="5"/>
+              <circle cx="230" cy="70" r="5"/>
+              <circle cx="275" cy="110" r="5"/>
+            </g>
+          </svg>
+        </div>
+        <div class="card-body">
+          <span class="genre">Memory · Puzzle</span>
+          <h3>Starpath</h3>
+          <p>Watch a constellation form star by star, then trace it back from memory. Each level adds a star — one slip is forgiven, a second ends the run.</p>
+          <span class="card-foot">Play now <span class="arrow">→</span></span>
+        </div>
+      </a>
+
+      <div class="card soon" aria-label="More games coming soon">
+        <div class="card-art">
+          <span class="soon-badge">Coming soon</span>
+        </div>
+        <div class="card-body">
+          <span class="genre">???</span>
+          <h3>New game incoming</h3>
+          <p>The next title is in the workshop. Check back soon — this slot is reserved for whatever lands next.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site">
+    <span>SOBI GAMES</span>
+    <span>Built for the browser · No install required</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('starfield');
+  const ctx = canvas.getContext('2d');
+  let w, h, stars, raf;
+
+  function resize(){
+    w = canvas.width = window.innerWidth * devicePixelRatio;
+    h = canvas.height = window.innerHeight * devicePixelRatio;
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+    const count = Math.min(140, Math.floor((window.innerWidth * window.innerHeight) / 9000));
+    stars = Array.from({length: count}, () => ({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      r: (Math.random() * 1.3 + 0.3) * devicePixelRatio,
+      a: Math.random() * 0.5 + 0.15,
+      tw: Math.random() * 0.02 + 0.004,
+      dir: Math.random() < 0.5 ? 1 : -1
+    }));
+  }
+
+  function tick(){
+    ctx.clearRect(0, 0, w, h);
+    for(const s of stars){
+      s.a += s.tw * s.dir;
+      if(s.a <= 0.12 || s.a >= 0.7) s.dir *= -1;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(234,234,245,' + s.a.toFixed(3) + ')';
+      ctx.fill();
+    }
+    raf = requestAnimationFrame(tick);
+  }
+
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  resize();
+  window.addEventListener('resize', resize);
+  if(reduce){
+    ctx.clearRect(0,0,w,h);
+    for(const s of stars){
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(234,234,245,' + s.a.toFixed(3) + ')';
+      ctx.fill();
+    }
+  } else {
+    tick();
+  }
+})();
+</script>
+</body>
+</html>
