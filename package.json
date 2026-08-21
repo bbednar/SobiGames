@@ -1,0 +1,17 @@
+{
+  "name": "sobi-games",
+  "version": "1.0.0",
+  "description": "Starpath - A memory-based constellation game",
+  "private": true,
+  "scripts": {
+    "dev": "npx serve .",
+    "build": "echo 'Static HTML project - no build needed'"
+  },
+  "dependencies": {
+    "@vercel/analytics": "^1.1.1"
+  },
+  "devDependencies": {},
+  "keywords": ["game", "memory", "constellation"],
+  "author": "",
+  "license": "MIT"
+}
