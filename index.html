@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Starpath</title>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RR7EHNY86C"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-RR7EHNY86C');
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0B0F1E;
+    --bg-deep: #060810;
+    --panel: #10152A;
+    --line-faint: rgba(234,234,245,0.08);
+    --star-idle: #454E70;
+    --star-dust: rgba(234,234,245,0.35);
+    --amber: #FFC369;
+    --amber-dim: rgba(255,195,105,0.35);
+    --cyan: #6EE7E0;
+    --error: #FF5C77;
+    --text: #EAEAF5;
+    --text-dim: #8A90AC;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at 50% -10%, #161C36 0%, var(--bg) 55%, var(--bg-deep) 100%);
+    color:var(--text);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:32px 16px;
+  }
+  .stage{
+    width:100%;
+    max-width:440px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .title{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:28px;
+    letter-spacing:0.02em;
+    margin:0;
+  }
+  .subtitle{
+    font-size:13px;
+    color:var(--text-dim);
+    margin:4px 0 20px;
+    text-align:center;
+    letter-spacing:0.03em;
+  }
+  .hud{
+    width:100%;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    margin-bottom:12px;
+    font-family:'JetBrains Mono', monospace;
+  }
+  .hud-block{display:flex; flex-direction:column;}
+  .hud-label{font-size:10px; color:var(--text-dim); letter-spacing:0.12em; text-transform:uppercase;}
+  .hud-value{font-size:22px; font-weight:700; color:var(--amber); line-height:1.1;}
+  .hud-value.status-text{font-size:14px; font-weight:500; color:var(--cyan);}
+  .lives{
+    display:flex; gap:6px; margin-top:4px;
+  }
+  .life-dot{
+    width:9px; height:9px; border-radius:50%;
+    background:var(--amber);
+    box-shadow:0 0 6px var(--amber-dim);
+    transition:background 0.3s, box-shadow 0.3s, opacity 0.3s;
+  }
+  .life-dot.spent{
+    background:transparent;
+    box-shadow:none;
+    border:1.5px solid var(--star-idle);
+  }
+  .board-wrap{
+    position:relative;
+    width:100%;
+    border-radius:16px;
+    background:var(--panel);
+    border:1px solid var(--line-faint);
+    overflow:hidden;
+  }
+  svg{display:block; width:100%; height:auto;}
+  .star{cursor:pointer;}
+  .star-glow{transition:opacity 0.35s ease;}
+  .path-line{
+    fill:none;
+    stroke:var(--amber);
+    stroke-width:2;
+    stroke-linecap:round;
+    opacity:0.9;
+    transition:opacity 0.4s ease;
+  }
+  .overlay{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center;
+    padding:24px;
+    background:rgba(6,8,16,0.82);
+    backdrop-filter:blur(2px);
+    gap:14px;
+  }
+  .overlay.hidden{display:none;}
+  .overlay h2{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:22px;
+    margin:0;
+    font-weight:700;
+  }
+  .overlay p{
+    font-size:13px;
+    color:var(--text-dim);
+    margin:0;
+    max-width:280px;
+    line-height:1.6;
+  }
+  .overlay .big-num{
+    font-family:'JetBrains Mono', monospace;
+    font-size:44px;
+    font-weight:700;
+    color:var(--amber);
+    margin:2px 0;
+  }
+  button.play-btn{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:14px;
+    letter-spacing:0.04em;
+    color:var(--bg-deep);
+    background:var(--amber);
+    border:none;
+    padding:12px 28px;
+    border-radius:999px;
+    cursor:pointer;
+    margin-top:6px;
+    transition:transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  button.play-btn:hover{transform:translateY(-1px); box-shadow:0 4px 18px var(--amber-dim);}
+  button.play-btn:active{transform:translateY(0px) scale(0.97);}
+  .message{
+    height:20px;
+    margin-top:14px;
+    font-size:13px;
+    color:var(--text-dim);
+    letter-spacing:0.02em;
+    transition:color 0.2s ease;
+  }
+  .message.error{color:var(--error);}
+  .message.ok{color:var(--cyan);}
+  @media (max-width:380px){
+    .title{font-size:24px;}
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <h1 class="title">STARPATH</h1>
+  <p class="subtitle">Watch the constellation form, then trace it from memory</p>
+
+  <div class="hud">
+    <div class="hud-block">
+      <span class="hud-label">Level</span>
+      <span class="hud-value" id="levelVal">—</span>
+    </div>
+    <div class="hud-block">
+      <span class="hud-label" id="statusLabel">Status</span>
+      <span class="hud-value status-text" id="statusVal">Ready</span>
+    </div>
+    <div class="hud-block" style="align-items:flex-end;">
+      <span class="hud-label">Mistakes left</span>
+      <div class="lives" id="lives">
+        <div class="life-dot" id="life0"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="board-wrap">
+    <svg id="board" viewBox="0 0 360 400" role="img" aria-label="Star field game board">
+      <g id="dust"></g>
+      <g id="lines"></g>
+      <g id="stars"></g>
+    </svg>
+
+    <div class="overlay" id="overlay">
+      <h2>Ready to navigate?</h2>
+      <p>A path lights up star by star. Memorize the order, then click the stars back in sequence. One mistake is forgiven — a second ends the run.</p>
+      <label style="display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-dim); cursor:pointer;">
+        <input type="checkbox" id="hardModeToggle" style="accent-color:var(--amber); width:15px; height:15px;">
+        Hard mode — stars drift and shift color
+      </label>
+      <button class="play-btn" id="startBtn">Start</button>
+    </div>
+  </div>
+
+  <div class="message" id="message"></div>
+</div>
+
+<script>
+(function(){
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.getElementById('board');
+  const starsG = document.getElementById('stars');
+  const linesG = document.getElementById('lines');
+  const dustG = document.getElementById('dust');
+  const overlay = document.getElementById('overlay');
+  const startBtn = document.getElementById('startBtn');
+  const levelVal = document.getElementById('levelVal');
+  const statusVal = document.getElementById('statusVal');
+  const statusLabel = document.getElementById('statusLabel');
+  const livesWrap = document.getElementById('lives');
+  const message = document.getElementById('message');
+
+  const W = 360, H = 400;
+  const STAR_COUNT = 15;
+  const MIN_DIST = 55;
+  const MARGIN = 30;
+  const ALLOWED_MISTAKES = 1;
+
+  let stars = [];
+  let path = [];
+  let level = 1;
+  let mistakesUsed = 0;
+  let mistakesRemaining = ALLOWED_MISTAKES;
+  let inputIndex = 0;
+  let state = 'idle';
+  let chaosMode = false;
+  let animId = null;
+  let activeLines = [];
+
+  function rand(min, max){ return Math.random() * (max - min) + min; }
+
+  function generateStars(){
+    stars = [];
+    let attempts = 0;
+    while(stars.length < STAR_COUNT && attempts < 5000){
+      attempts++;
+      const x = rand(MARGIN, W - MARGIN);
+      const y = rand(MARGIN + 10, H - MARGIN);
+      let ok = true;
+      for(const s of stars){
+        const d = Math.hypot(s.x - x, s.y - y);
+        if(d < MIN_DIST){ ok = false; break; }
+      }
+      if(ok) stars.push({
+        x, y,
+        vx: rand(0.4, 1.0) * (Math.random() < 0.5 ? -1 : 1),
+        vy: rand(0.4, 1.0) * (Math.random() < 0.5 ? -1 : 1),
+        hueOffset: rand(0, Math.PI * 2),
+        locked: false
+      });
+    }
+  }
+
+  function generateDust(){
+    dustG.innerHTML = '';
+    for(let i=0;i<60;i++){
+      const c = document.createElementNS(NS, 'circle');
+      c.setAttribute('cx', rand(0, W));
+      c.setAttribute('cy', rand(0, H));
+      c.setAttribute('r', rand(0.5, 1.4));
+      c.setAttribute('fill', 'var(--star-dust)');
+      c.setAttribute('opacity', rand(0.15, 0.55));
+      dustG.appendChild(c);
+    }
+  }
+
+  function renderStars(){
+    starsG.innerHTML = '';
+    stars.forEach((s, i) => {
+      const g = document.createElementNS(NS, 'g');
+      g.setAttribute('class', 'star');
+      g.setAttribute('data-index', i);
+
+      const glow = document.createElementNS(NS, 'circle');
+      glow.setAttribute('class', 'star-glow');
+      glow.setAttribute('cx', s.x);
+      glow.setAttribute('cy', s.y);
+      glow.setAttribute('r', 14);
+      glow.setAttribute('fill', 'var(--amber)');
+      glow.setAttribute('opacity', 0);
+      glow.setAttribute('data-role', 'glow');
+
+      const dot = document.createElementNS(NS, 'circle');
+      dot.setAttribute('cx', s.x);
+      dot.setAttribute('cy', s.y);
+      dot.setAttribute('r', 6);
+      dot.setAttribute('fill', 'var(--star-idle)');
+      dot.setAttribute('data-role', 'dot');
+      dot.style.transition = 'fill 0.25s ease, r 0.25s ease';
+
+      const hit = document.createElementNS(NS, 'circle');
+      hit.setAttribute('cx', s.x);
+      hit.setAttribute('cy', s.y);
+      hit.setAttribute('r', 20);
+      hit.setAttribute('fill', 'transparent');
+      hit.setAttribute('data-role', 'hit');
+
+      g.appendChild(glow);
+      g.appendChild(dot);
+      g.appendChild(hit);
+      g.addEventListener('click', () => onStarClick(i));
+      starsG.appendChild(g);
+    });
+  }
+
+  function setStarFill(i, color, radius, lock){
+    const g = starsG.children[i];
+    const dot = g.querySelector('[data-role="dot"]');
+    dot.setAttribute('fill', color);
+    if(radius) dot.setAttribute('r', radius);
+    stars[i].locked = !!lock;
+  }
+  function setStarGlow(i, opacity){
+    const g = starsG.children[i];
+    const glow = g.querySelector('[data-role="glow"]');
+    glow.setAttribute('opacity', opacity);
+  }
+
+  function resetVisuals(){
+    linesG.innerHTML = '';
+    activeLines = [];
+    stars.forEach((_, i) => { setStarFill(i, 'var(--star-idle)', 6, false); setStarGlow(i, 0); });
+  }
+
+  function drawLine(a, b, color){
+    const line = document.createElementNS(NS, 'line');
+    line.setAttribute('class', 'path-line');
+    line.setAttribute('x1', stars[a].x);
+    line.setAttribute('y1', stars[a].y);
+    line.setAttribute('x2', stars[a].x);
+    line.setAttribute('y2', stars[a].y);
+    if(color) line.setAttribute('stroke', color);
+    linesG.appendChild(line);
+    requestAnimationFrame(() => {
+      line.style.transition = 'x2 0.35s ease, y2 0.35s ease';
+      line.setAttribute('x2', stars[b].x);
+      line.setAttribute('y2', stars[b].y);
+    });
+    activeLines.push({el: line, a, b});
+  }
+
+  function chaosTick(ts){
+    if(!chaosMode){ animId = null; return; }
+    const t = ts / 1000;
+    stars.forEach((s, i) => {
+      s.x += s.vx; s.y += s.vy;
+      if(s.x < MARGIN || s.x > W - MARGIN){ s.vx *= -1; s.x = Math.max(MARGIN, Math.min(W - MARGIN, s.x)); }
+      if(s.y < MARGIN + 10 || s.y > H - MARGIN){ s.vy *= -1; s.y = Math.max(MARGIN + 10, Math.min(H - MARGIN, s.y)); }
+      const g = starsG.children[i];
+      const glow = g.querySelector('[data-role="glow"]');
+      const dot = g.querySelector('[data-role="dot"]');
+      const hit = g.querySelector('[data-role="hit"]');
+      glow.setAttribute('cx', s.x); glow.setAttribute('cy', s.y);
+      dot.setAttribute('cx', s.x); dot.setAttribute('cy', s.y);
+      hit.setAttribute('cx', s.x); hit.setAttribute('cy', s.y);
+      if(!s.locked){
+        const hue = 210 + 110 * Math.sin(t * 0.7 + s.hueOffset);
+        dot.setAttribute('fill', 'hsl(' + hue.toFixed(0) + ',72%,66%)');
+      }
+    });
+    activeLines.forEach(l => {
+      l.el.style.transition = 'none';
+      l.el.setAttribute('x1', stars[l.a].x); l.el.setAttribute('y1', stars[l.a].y);
+      l.el.setAttribute('x2', stars[l.b].x); l.el.setAttribute('y2', stars[l.b].y);
+    });
+    animId = requestAnimationFrame(chaosTick);
+  }
+
+  function startChaosLoop(){
+    if(chaosMode && animId === null) animId = requestAnimationFrame(chaosTick);
+  }
+  function stopChaosLoop(){
+    if(animId !== null){ cancelAnimationFrame(animId); animId = null; }
+  }
+
+  function pathLength(lvl){
+    return Math.min(3 + (lvl - 1), STAR_COUNT - 1);
+  }
+
+  function generatePath(lvl){
+    const len = pathLength(lvl);
+    const pool = stars.map((_, i) => i);
+    const p = [];
+    for(let i=0;i<len;i++){
+      const idx = Math.floor(Math.random() * pool.length);
+      p.push(pool[idx]);
+      pool.splice(idx, 1);
+    }
+    return p;
+  }
+
+  function setMessage(text, kind){
+    message.textContent = text || '';
+    message.className = 'message' + (kind ? ' ' + kind : '');
+  }
+
+  function renderLives(){
+    livesWrap.innerHTML = '';
+    for(let i=0;i<ALLOWED_MISTAKES;i++){
+      const dot = document.createElement('div');
+      dot.className = 'life-dot' + (i < mistakesUsed ? ' spent' : '');
+      livesWrap.appendChild(dot);
+    }
+  }
+
+  function startRound(){
+    state = 'showing';
+    inputIndex = 0;
+    levelVal.textContent = level;
+    statusLabel.textContent = 'Status';
+    statusVal.textContent = 'Watch';
+    setMessage('Memorize the path…');
+    resetVisuals();
+    path = generatePath(level);
+    revealPath(0);
+  }
+
+  function revealPath(i){
+    if(i >= path.length){
+      setTimeout(() => {
+        resetVisuals();
+        state = 'input';
+        statusVal.textContent = 'Your turn';
+        setMessage('Click the stars in order');
+      }, 550);
+      return;
+    }
+    const idx = path[i];
+    setStarFill(idx, 'var(--amber)', 8, true);
+    setStarGlow(idx, 0.55);
+    if(i > 0) drawLine(path[i-1], idx);
+    setTimeout(() => revealPath(i+1), 620);
+  }
+
+  function onStarClick(i){
+    if(state !== 'input') return;
+    const expected = path[inputIndex];
+    if(i === expected){
+      setStarFill(i, 'var(--cyan)', 8, true);
+      setStarGlow(i, 0.5);
+      if(inputIndex > 0) drawLine(path[inputIndex-1], i, 'var(--cyan)');
+      inputIndex++;
+      if(inputIndex === path.length){
+        levelComplete();
+      }
+    } else {
+      handleMistake(i);
+    }
+  }
+
+  function handleMistake(i){
+    const g = starsG.children[i];
+    const dot = g.querySelector('[data-role="dot"]');
+    const orig = dot.getAttribute('fill');
+    dot.setAttribute('fill', 'var(--error)');
+    setTimeout(() => { if(state === 'input' || state === 'gameover') dot.setAttribute('fill', orig === 'var(--error)' ? 'var(--star-idle)' : orig); }, 260);
+
+    mistakesUsed++;
+    renderLives();
+
+    if(mistakesUsed > ALLOWED_MISTAKES){
+      gameOver();
+      return;
+    }
+    state = 'paused';
+    setMessage('Wrong star — retrace the path from the start', 'error');
+    setTimeout(() => {
+      resetVisuals();
+      inputIndex = 0;
+      state = 'input';
+      setMessage('Click the stars in order');
+    }, 900);
+  }
+
+  function levelComplete(){
+    state = 'success';
+    statusVal.textContent = 'Charted';
+    setMessage('Constellation complete', 'ok');
+    setTimeout(() => {
+      level++;
+      startRound();
+    }, 1000);
+  }
+
+  function gameOver(){
+    state = 'gameover';
+    statusVal.textContent = 'Lost signal';
+    setMessage('');
+    overlay.classList.remove('hidden');
+    overlay.querySelector('h2').textContent = 'Signal lost';
+    overlay.querySelector('p').remove ? null : null;
+    const p = overlay.querySelector('p');
+    if(p) p.textContent = 'You reached level ' + level + ' before the path slipped away.';
+    let bigNum = overlay.querySelector('.big-num');
+    if(!bigNum){
+      bigNum = document.createElement('div');
+      bigNum.className = 'big-num';
+      overlay.insertBefore(bigNum, p.nextSibling);
+    }
+    bigNum.textContent = 'Lv ' + level;
+    startBtn.textContent = 'Try again';
+  }
+
+  function newGame(){
+    level = 1;
+    mistakesUsed = 0;
+    stopChaosLoop();
+    generateStars();
+    generateDust();
+    renderStars();
+    renderLives();
+    overlay.classList.add('hidden');
+    startChaosLoop();
+    startRound();
+  }
+
+  const hardModeToggle = document.getElementById('hardModeToggle');
+
+  startBtn.addEventListener('click', () => {
+    const bigNum = overlay.querySelector('.big-num');
+    if(bigNum) bigNum.remove();
+    overlay.querySelector('h2').textContent = 'Ready to navigate?';
+    const p = overlay.querySelector('p');
+    if(p) p.textContent = 'A path lights up star by star. Memorize the order, then click the stars back in sequence. One mistake is forgiven — a second ends the run.';
+    chaosMode = hardModeToggle.checked;
+    newGame();
+  });
+
+  generateStars();
+  generateDust();
+  renderStars();
+  renderLives();
+})();
+</script>
+</body>
+</html>
